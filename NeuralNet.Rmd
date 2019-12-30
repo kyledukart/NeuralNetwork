@@ -1,0 +1,56 @@
+---
+title: "Lab8"
+author: "Kyle Dukart"
+date: "March 13, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` {r setup2}
+concrete_raw<-read.csv("C:/Users/Kyle/Desktop/rfiles/concrete.csv")
+str(concrete_raw)
+summary(concrete_raw)
+```
+
+``` {r clean}
+#z score normalization
+concrete_strength <- concrete_raw$strength
+concrete_raw <- within(concrete_raw, rm(strength))
+zscore <- function(x) {return((x-mean(x))/sd(x))}
+concrete_clean <- as.data.frame(lapply(concrete_raw, zscore))
+concrete_clean[,'strength'] <- concrete_strength
+```
+
+``` {r prepare}
+#seperate training and test data
+set.seed(123)
+train_sample <- sample(1030,772)
+concrete_train <- concrete_clean[train_sample,]
+concrete_test <- concrete_clean[-train_sample,]
+```
+
+``` {r import}
+#install.packages("neuralnet",  dependencies = TRUE, repos="http://cran.us.r-project.org")
+library(neuralnet)
+```
+
+``` {r train}
+concrete_model <- neuralnet(concrete_train$strength ~ cement + slag + water + ash + superplastic + coarseagg + fineagg + age, data = concrete_train, hidden = 1)
+plot(concrete_model, rep = "best")
+```
+
+``` {r evaluate}
+p <- compute(concrete_model, concrete_test[1:8])
+cor(p$net.result, concrete_test$strength)
+```
+
+``` {r improve}
+set.seed(234)
+concrete_model2 <- neuralnet(concrete_train$strength ~ cement + slag + water + ash + superplastic + coarseagg + fineagg + age, data = concrete_train, hidden = 5)
+plot(concrete_model2, rep = "best")
+p2 <- compute(concrete_model2, concrete_test[1:8])
+cor(p2$net.result, concrete_test$strength)
+```
